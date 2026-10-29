@@ -1,0 +1,26 @@
+# Dépendances
+node_modules/
+
+# Builds
+dist/
+.next/
+coverage/
+next-env.d.ts
+
+# Variables d'environnement (ne jamais versionner les secrets)
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
+*.log
