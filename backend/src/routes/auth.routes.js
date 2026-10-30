@@ -9,7 +9,7 @@ import {
 } from '../controllers/auth.controller.js';
 
 import requireAuth from '../middleware/requireAuth.js';
-import asyncHandler from '../middlewares/asyncHandler.js';
+import asyncHandler from '../middleware/Asynchandler.js';
 
 const router = Router();
 
@@ -27,7 +27,6 @@ router.post(
 // Routes privées : utilisateur connecté
 router.get(
     '/me',
-    requireAuth,
     asyncHandler(me)
 );
 

@@ -9,9 +9,9 @@ import {
   closeSurvey,
   duplicateSurvey,
 } from '../controllers/surveys.controller.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
-import { requireRole } from '../middlewares/requireRole.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import requireAuth from '../middleware/requireAuth.js';
+import requireRole from '../middleware/authorizeRoles.js';
+import asyncHandler from '../middleware/Asynchandler.js';
  
 // Préfixe : /api/surveys  (RH seulement)
 // La participation d'un sondage est dans /api/participation/surveys/:id
@@ -24,7 +24,6 @@ router.get('/', asyncHandler(listSurveys));
 router.get('/:id', asyncHandler(getSurvey));
 router.patch('/:id', asyncHandler(updateSurvey));
 router.delete('/:id', asyncHandler(deleteSurvey));
- 
 router.post('/:id/publish', asyncHandler(publishSurvey));
 router.post('/:id/close', asyncHandler(closeSurvey));
 router.post('/:id/duplicate', asyncHandler(duplicateSurvey));

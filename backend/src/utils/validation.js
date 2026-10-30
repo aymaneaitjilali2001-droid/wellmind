@@ -1,4 +1,4 @@
-import { HttpError } from '/HttpError.js';
+import { HttpError } from './Httperror.js';
 
 // Lance la validation Mongoose d'un document.
 // Les erreurs lancées dans les hooks pre('validate') des modèles

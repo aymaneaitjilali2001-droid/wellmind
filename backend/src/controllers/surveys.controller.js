@@ -1,6 +1,5 @@
 import Survey, { QUESTION_TYPES, SURVEY_STATUSES } from '../models/surveys.models.js';
 import Participation from '../models/participations.models.js';
-import User from '../models/users.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { runValidation, pick, requireFields } from '../utils/validation.js';
 
@@ -59,9 +58,6 @@ const findSurveyInOrg = async (req) => {
   return survey;
 };
 
-// Nombre d'employés actifs pouvant répondre
-const countEligible = (organizationId) =>
-  User.countDocuments({ organizationId, role: 'EMPLOYEE', isActive: true });
 
 // ---------- Contrôleurs (RH) ----------
 
@@ -228,24 +224,3 @@ export const duplicateSurvey = async (req, res) => {
   res.status(201).json(copy);
 };
 
-// GET /api/surveys/:id/participation
-// Taux de participation global. Pas de détail par employé ni par service :
-// cela pourrait aider à deviner qui a répondu à un sondage anonyme.
-export const getParticipation = async (req, res) => {
-  const survey = await findSurveyInOrg(req);
-
-  const [participants, eligible] = await Promise.all([
-    Participation.countForSurvey(survey._id),
-    countEligible(survey.organizationId),
-  ]);
-
-  const rate = eligible ? Math.round((participants / eligible) * 1000) / 10 : 0;
-
-  res.json({
-    surveyId: survey._id,
-    status: survey.status,
-    participants,
-    eligible,
-    participationRate: rate, // en %, ex : 72.5
-  });
-};

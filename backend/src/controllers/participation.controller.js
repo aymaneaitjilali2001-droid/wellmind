@@ -20,7 +20,7 @@
 
 import Survey from '../models/surveys.models.js';
 import Participation from '../models/participations.models.js';
-import User from '../models/users.models.js';
+import User from '../models/User.models.js';
 import { HttpError } from '../utils/Httperror.js';
 
 // ---------- Helpers ----------

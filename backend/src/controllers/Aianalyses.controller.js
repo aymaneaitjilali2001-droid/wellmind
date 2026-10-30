@@ -25,8 +25,8 @@ import Organization from '../models/organizations.models.js';
 import AiAnalysis, { RECOMMENDATION_STATUSES } from '../models/aiAnalyses.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { requireFields } from '../utils/validation.js';
-import { analyzeComments, AiServiceError } from '../utils/aiClient.js';
-import { sanitizeAiOutput } from '../utils/aiOutput.js';
+import { analyzeComments, AiServiceError } from '../utils/AIClient.js';
+import { sanitizeAiOutput } from '../utils/Aioutput.js';
 
 // Une analyse PENDING plus vieille que ça est considérée comme bloquée
 const PENDING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -60,8 +60,12 @@ export const requestAnalysis = async (req, res) => {
 
   const survey = await Survey.findOne({ _id: req.body.surveyId, organizationId });
   if (!survey) throw new HttpError(404, 'Sondage introuvable');
-  if (survey.status === 'DRAFT') throw new HttpError(409, 'Un brouillon ne peut pas être analysé');
-
+   if (survey.status !== 'CLOSED') {
+    throw new HttpError(
+      409,
+      'Seuls les sondages clôturés peuvent être analysés'
+    );
+  }
   // Évite deux analyses en même temps sur le même sondage
   const running = await AiAnalysis.exists({
     surveyId: survey._id,
@@ -111,23 +115,32 @@ export const requestAnalysis = async (req, res) => {
 
   // 4. Appel au service IA, puis validation de sa réponse
   try {
+    const allQuestions = survey.getSortedQuestions();
+
     const textQuestions = survey
       .getSortedQuestions()
       .filter((q) => q.type === 'TEXT')
       .map((q) => q.label);
 
+      const statistics = await Response.getAggregatedStats(
+     survey._id,
+     allQuestions
+    );
     const raw = await analyzeComments({
       survey: { title: survey.title, topic: survey.topic || null, questions: textQuestions },
       comments,
+      statistics,
     });
 
     const clean = sanitizeAiOutput(raw, comments);
 
     analysis.set({
       status: 'DONE',
+      statistics,
       summary: clean.summary,
       insufficientData: clean.insufficientData,
       limitations: clean.limitations,
+      aiGenerated: true,
       aiModel: clean.model,
       themes: clean.themes,
     });
@@ -167,6 +180,7 @@ export const listAnalyses = async (req, res) => {
       surveyId: a.surveyId?._id || a.surveyId,
       surveyTitle: a.surveyId?.title || null,
       status: a.status,
+      aiGenerated: a.aiGenerated,
       insufficientData: a.insufficientData,
       responseCount: a.responseCount,
       commentCount: a.commentCount,

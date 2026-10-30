@@ -111,7 +111,44 @@ const themeSchema = new mongoose.Schema(
   },
   { _id: true }
 );
+// ---------- Statistiques des questions ----------
+const questionStatisticSchema = new mongoose.Schema(
+  {
+    questionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
 
+    question: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    questionType: {
+      type: String,
+      required: true,
+    },
+
+    responseCount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    average: {
+      type: Number,
+      default: null,
+    },
+
+    distribution: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
+  },
+  { _id: false }
+);
 // ---------- Analyse ----------
 const aiAnalysisSchema = new mongoose.Schema(
   {
@@ -160,6 +197,14 @@ const aiAnalysisSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
+    statistics: {
+     type: [questionStatisticSchema],
+     default: [],
+       },
+       aiGenerated: {
+       type: Boolean,
+       default: false,
+       },
 
     // true si trop peu de commentaires : l'IA ne tire pas de conclusions
     insufficientData: {

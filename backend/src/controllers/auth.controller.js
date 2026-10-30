@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 import Organization from '../models/organizations.models.js';
-import User from '../models/users.models.js';
+import User from '../models/User.models.js';
 
 import { HttpError } from '../utils/Httperror.js';
 import { runValidation, requireFields } from '../utils/validation.js';

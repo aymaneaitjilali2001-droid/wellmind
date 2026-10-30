@@ -1,5 +1,5 @@
 
-import User from '../models/users.models.js';
+import User from '../models/User.models.js';
 import { verifyToken } from '../utils/Jwt.js';
 import { HttpError } from '../utils/Httperror.js';
 
@@ -29,7 +29,15 @@ const requireAuth = async (req, _res, next) => {
         }
 
         // 5. Ajouter l'utilisateur à la requête
-        req.user = user;
+        // Les contrôleurs lisent req.user.userId (chaîne) et req.user.organizationId
+        req.user = {
+            userId: user._id.toString(),
+            organizationId: user.organizationId.toString(),
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+        };
 
         // 6. Passer au middleware suivant
         next();

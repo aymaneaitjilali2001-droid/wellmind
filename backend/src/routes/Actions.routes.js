@@ -9,9 +9,9 @@ import {
   changeActionStatus,
   addActionUpdate,
 } from '../controllers/Improvementactions.controller.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
-import { requireRole } from '../middlewares/requireRole.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import requireAuth from '../middleware/requireAuth.js';
+import requireRole from '../middleware/authorizeRoles.js';
+import asyncHandler from '../middleware/Asynchandler.js';
 
 // Préfixe : /api/actions  (RH seulement)
 // Les employés voient les actions partagées via GET /api/employee/actions

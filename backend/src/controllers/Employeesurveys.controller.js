@@ -19,11 +19,11 @@ import mongoose from 'mongoose';
 import Survey from '../models/surveys.models.js';
 import Participation from '../models/participations.models.js';
 import Response from '../models/responses.models.js';
-import User from '../models/users.models.js';
+import User from '../models/User.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { runValidation } from '../utils/validation.js';
-import { redact } from '../utils/redact.js';
-import { anonymousObjectId } from '../utils/anonymousId.js';
+import { redact } from '../utils/Redact.js';
+import { anonymousObjectId } from '../utils/Anonymousid.js';
 
 const MAX_TEXT_LENGTH = 3000;
 

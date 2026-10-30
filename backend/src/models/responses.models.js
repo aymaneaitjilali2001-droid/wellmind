@@ -183,6 +183,122 @@ responseSchema.statics.getRedactedComments = async function (surveyId) {
   ]);
   return rows;
 };
+// Statistiques des réponses numériques et des choix
+responseSchema.statics.getAggregatedStats = async function (
+  surveyId,
+  questions
+) {
+  // 1. Récupérer les réponses RATING et CHOICE du sondage
+  const rows = await this.aggregate([
+    {
+      $match: {
+        surveyId: new mongoose.Types.ObjectId(String(surveyId)),
+      },
+    },
+    { $unwind: '$answers' },
+    {
+      $match: {
+        'answers.questionType': { $in: ['RATING', 'CHOICE'] },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          questionId: '$answers.questionId',
+          questionType: '$answers.questionType',
+          value: {
+            $cond: [
+              { $eq: ['$answers.questionType', 'RATING'] },
+              '$answers.ratingValue',
+              '$answers.optionId',
+            ],
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // 2. Regrouper les résultats par question
+  const statsMap = new Map();
+
+  for (const row of rows) {
+    const questionId = row._id.questionId.toString();
+    const questionType = row._id.questionType;
+    const value = row._id.value;
+
+    const key = `${questionId}_${questionType}`;
+
+    if (!statsMap.has(key)) {
+      const question = questions.find(
+        (q) => q._id.toString() === questionId
+      );
+
+      statsMap.set(key, {
+        questionId,
+        question: question?.label || 'Question inconnue',
+        questionType,
+        responseCount: 0,
+        average: null,
+        distribution: {},
+        totalRating: 0,
+      });
+    }
+
+    const stat = statsMap.get(key);
+
+    stat.responseCount += row.count;
+
+    // 3. Construire la distribution des réponses
+    const distributionKey = String(value);
+
+    stat.distribution[distributionKey] =
+      (stat.distribution[distributionKey] || 0) + row.count;
+
+    // 4. Calculer la somme des notes pour RATING
+    if (questionType === 'RATING') {
+      stat.totalRating += Number(value) * row.count;
+    }
+  }
+
+// 5. Calculer la moyenne et préparer le résultat final
+const statistics = [];
+
+for (const question of questions) {
+  // On récupère le type de question
+  const questionType = question.type;
+
+  // On ignore les questions qui ne sont pas RATING ou CHOICE
+  if (!['RATING', 'CHOICE'].includes(questionType)) {
+    continue;
+  }
+
+  // On construit la clé pour retrouver les statistiques
+  const key = `${question._id.toString()}_${questionType}`;
+
+  // On récupère les statistiques de cette question
+  const stat = statsMap.get(key);
+
+  // Si aucune réponse n'existe pour cette question, on passe à la suivante
+  if (!stat) {
+    continue;
+  }
+
+  // Calculer la moyenne pour les questions RATING
+  if (stat.questionType === 'RATING' && stat.responseCount > 0) {
+    stat.average = Number(
+      (stat.totalRating / stat.responseCount).toFixed(2)
+    );
+  }
+
+  delete stat.totalRating;
+
+  // Ajouter les statistiques dans l'ordre du sondage
+  statistics.push(stat);
+}
+
+return statistics;
+};
 
 const Response = mongoose.model('Response', responseSchema);
 export default Response;

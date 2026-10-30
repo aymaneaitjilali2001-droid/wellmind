@@ -3,9 +3,9 @@ import {
   getParticipationOverview,
   getSurveyParticipation,
 } from '../controllers/participation.controller.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
-import { requireRole } from '../middlewares/requireRole.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
+import requireAuth from '../middleware/requireAuth.js';
+import requireRole from '../middleware/authorizeRoles.js';
+import asyncHandler from '../middleware/Asynchandler.js';
 
 // Préfixe : /api/participation  (RH seulement, chiffres agrégés)
 const router = Router();

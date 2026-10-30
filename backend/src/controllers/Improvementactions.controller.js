@@ -25,7 +25,7 @@ import mongoose from 'mongoose';
 import ImprovementAction, { ACTION_STATUSES } from '../models/improvementActions.models.js';
 import AiAnalysis from '../models/aiAnalyses.models.js';
 import Survey from '../models/surveys.models.js';
-import User from '../models/users.models.js';
+import User from '../models/User.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { runValidation, pick, requireFields } from '../utils/validation.js';
 
@@ -224,6 +224,35 @@ export const listActions = async (req, res) => {
 
 // GET /api/actions/summary?surveyId=...
 // Chiffres pour le tableau de bord RH
+/*GET /api/actions/summary
+          |
+          v
+Filtrer par organisation
+          |
+          v
+Filtrer par surveyId (facultatif)
+          |
+          v
+      Promise.all()
+          |
+    +-----+------+ 
+    |            |
+    v            v
+Compter par   Compter les
+statut        actions en retard
+    |
+    +------------------+
+                       |
+                       v
+             Compter les actions
+             visibles aux employés
+                       |
+                       v
+              Calculer les totaux
+              et completionRate
+                       |
+                       v
+                Retourner JSON*/
 export const getActionsSummary = async (req, res) => {
   const match = { organizationId: new mongoose.Types.ObjectId(req.user.organizationId) };
   if (req.query.surveyId) {

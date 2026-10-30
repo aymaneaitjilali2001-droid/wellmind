@@ -1,5 +1,5 @@
 import Organization from '../models/organizations.models.js';
-import User, { USER_ROLES } from '../models/users.models.js';
+import User, { USER_ROLES } from '../models/User.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { runValidation, pick, requireFields, escapeRegex, getPagination } from '../utils/validation.js';
 import { validatePassword, hashPassword, comparePassword } from '../utils/Password.js';

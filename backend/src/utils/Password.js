@@ -1,5 +1,5 @@
-import bcrypt from 'bcryptjs';
-import{HttpError}from '/HttpError.js';
+import bcrypt from 'bcrypt';
+import { HttpError } from './Httperror.js';
 
 const SALT_ROUNDS = 10;
 
