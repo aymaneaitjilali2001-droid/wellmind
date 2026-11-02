@@ -29,7 +29,7 @@
 //
 // Variables .env :
 //   AI_SERVICE_URL=http://localhost:5000
-//   AI_SERVICE_TOKEN=un_secret_partage   (facultatif, envoyé dans X-Service-Token)
+//   AI_INTERNAL_KEY=un_secret_partage    (envoyé dans X-Internal-Key)
 //   AI_SERVICE_TIMEOUT_MS=60000
 //   AI_SERVICE_MOCK=true                 (réponse simulée, sans Flask : pour développer)
 // ---------------------------------------------------------------
@@ -128,7 +128,7 @@ export const analyzeComments = async (payload) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(process.env.AI_SERVICE_TOKEN && { 'X-Service-Token': process.env.AI_SERVICE_TOKEN }),
+        ...(process.env.AI_INTERNAL_KEY && { 'X-Internal-Key': process.env.AI_INTERNAL_KEY }),
       },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(timeoutMs),

@@ -19,6 +19,7 @@
 //  PATCH /api/analyses/:id/recommendations/:recId       → reviewRecommendation
 // ---------------------------------------------------------------
 
+import crypto from 'node:crypto';
 import Survey from '../models/surveys.models.js';
 import Response from '../models/responses.models.js';
 import Organization from '../models/organizations.models.js';
@@ -42,6 +43,16 @@ const findAnalysisInOrg = async (req) => {
 const getThreshold = async (organizationId) => {
   const org = await Organization.findById(organizationId).select('minResponseThreshold').lean();
   return org?.minResponseThreshold ?? 5;
+};
+
+// Mélange aléatoire : l'ordre envoyé à l'IA ne suit pas l'ordre des réponses
+const shuffle = (items) => {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 };
 
 // Format renvoyé au frontend : thèmes séparés pour le tableau de bord
@@ -87,7 +98,7 @@ export const requestAnalysis = async (req, res) => {
   }
 
   // 2. Commentaires désidentifiés, numérotés 0, 1, 2… (aucun id réel)
-  const rows = await Response.getRedactedComments(survey._id);
+  const rows = shuffle(await Response.getRedactedComments(survey._id));
   const comments = rows.map((r, i) => ({ id: i, text: r.text }));
 
   const analysis = new AiAnalysis({
@@ -129,7 +140,6 @@ export const requestAnalysis = async (req, res) => {
     const raw = await analyzeComments({
       survey: { title: survey.title, topic: survey.topic || null, questions: textQuestions },
       comments,
-      statistics,
     });
 
     const clean = sanitizeAiOutput(raw, comments);
