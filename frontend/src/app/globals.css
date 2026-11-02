@@ -1,37 +1,82 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Relie les classes Tailwind (bg-primary, border-border…) aux variables du thème */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Couleurs de la marque WellMind : bg-brand-600, text-brand-700… */
+@theme {
+  --color-brand-50: #eef6f3;
+  --color-brand-100: #e4f1ed;
+  --color-brand-200: #c5e2d8;
+  --color-brand-300: #9cc9bb;
+  --color-brand-500: #2f7a67;
+  --color-brand-600: #1f5f50;
+  --color-brand-700: #194e42;
+  --color-brand-800: #133c33;
+}
+
+/* Thème clair (palette Slate, couleur principale = vert WellMind) */
 :root {
-  --bg: #f7f8fa;
-  --fg: #1c2430;
-  --muted: #5b6676;
-  --ok: #1f7a4d;
-  --ko: #b3261e;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.129 0.042 264.695);
+  --primary: #1f5f50;
+  --primary-foreground: #ffffff;
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: #9cc9bb;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.5;
-}
-
-main {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 3rem 1.25rem;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.ok {
-  color: var(--ok);
-}
-
-.ko {
-  color: var(--ko);
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-slate-50 text-foreground antialiased;
+  }
+    html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
 }

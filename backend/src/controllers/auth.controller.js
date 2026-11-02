@@ -12,32 +12,18 @@ import {
   hashPassword,
   comparePassword,
 } from '../utils/Password.js';
+// Nom et options du cookie : définis une seule fois dans utils/authCookie.js
+import { AUTH_COOKIE, setAuthCookie, clearAuthCookie } from '../utils/authCookie.js';
 
 // ======================================================
-// 1. CONFIGURATION DES COOKIES
-// ======================================================
-
-const production = process.env.NODE_ENV === 'production';
-
-const COOKIE_NAME = 'wellmind_session';
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: production,
-  sameSite: 'lax',
-  path: '/',
-  maxAge: 8 * 60 * 60 * 1000, // 8 heures
-};
-
-// ======================================================
-// 2. CHAMPS PUBLICS DE L'ORGANISATION
+// 1. CHAMPS PUBLICS DE L'ORGANISATION
 // ======================================================
 
 const ORG_PUBLIC_FIELDS =
   'name slug industry size minResponseThreshold departments isActive';
 
 // ======================================================
-// 3. RETOURNER LES INFORMATIONS PUBLIQUES DE L'UTILISATEUR
+// 2. RETOURNER LES INFORMATIONS PUBLIQUES DE L'UTILISATEUR
 // ======================================================
 
 const publicUser = (user) => ({
@@ -49,26 +35,6 @@ const publicUser = (user) => ({
   role: user.role,
   isActive: user.isActive,
 });
-
-// ======================================================
-// 4. ENVOYER LE JWT DANS UN COOKIE
-// ======================================================
-
-const setAuthCookie = (res, user) => {
-  const token = signToken(user);
-
-  res.cookie(COOKIE_NAME, token, cookieOptions);
-};
-
-// ======================================================
-// 5. SUPPRIMER LE COOKIE
-// ======================================================
-
-const clearAuthCookie = (res) => {
-  const { maxAge, ...options } = cookieOptions;
-
-  res.clearCookie(COOKIE_NAME, options);
-};
 
 // ======================================================
 // POST /api/auth/register-organization
@@ -140,7 +106,7 @@ export const registerOrganization = async (req, res) => {
   }
 
   // Générer le JWT et le placer dans un cookie.
-  setAuthCookie(res, user);
+  setAuthCookie(res, signToken(user));
 
   // Ne pas retourner le token dans le JSON.
   res.status(201).json({
@@ -183,7 +149,7 @@ export const login = async (req, res) => {
   }
 
   // Générer le JWT et l'envoyer dans le cookie.
-  setAuthCookie(res, user);
+  setAuthCookie(res, signToken(user));
 
   res.json({
     message: 'Connexion réussie.',
@@ -198,7 +164,7 @@ export const login = async (req, res) => {
 // ======================================================
 
 export const me = async (req, res) => {
-  const token = req.cookies?.[COOKIE_NAME];
+  const token = req.cookies?.[AUTH_COOKIE];
 
   // Aucun cookie : personne n'est connecté.
   if (!token) {

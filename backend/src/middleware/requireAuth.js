@@ -2,11 +2,11 @@
 import User from '../models/User.models.js';
 import { verifyToken } from '../utils/Jwt.js';
 import { HttpError } from '../utils/Httperror.js';
-
+import { AUTH_COOKIE } from '../utils/authCookie.js';
 const requireAuth = async (req, _res, next) => {
     try {
         // 1. Récupérer le token depuis le cookie
-        const token = req.cookies?.wellmind_session;
+       const token = req.cookies?.[AUTH_COOKIE];
 
         if (!token) {
             return next(new HttpError(401, 'Authentification requise'));
