@@ -151,7 +151,11 @@ export const requestAnalysis = async (req, res) => {
       comments,
     });
 
-    const clean = sanitizeAiOutput(raw, comments);
+     const clean = sanitizeAiOutput(raw, comments, {
+      names,
+      allowedNumbers: [responseCount],
+      referenceTexts: [survey.title, survey.topic, ...textQuestions],
+    });
 
     analysis.set({
       status: 'DONE',

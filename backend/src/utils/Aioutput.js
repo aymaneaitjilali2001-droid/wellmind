@@ -1,5 +1,6 @@
 
 import { AiServiceError } from './AIClient.js';
+import { redact } from './Redact.js';
 
 // ===============================================================
 // SANITISATION ET VALIDATION DES RÉSULTATS DE L'IA
@@ -51,6 +52,19 @@ const MAX_EXCERPTS = 3;
 const MIN_MENTIONS_FOR_EXCERPTS = 2;
 
 
+// Un thème mentionné dans un seul commentaire n'est pas conservé :
+// il décrirait une seule personne, pas une tendance.
+const MIN_MENTIONS_FOR_THEME = 2;
+
+// Nombres isolés : "T3" n'est pas compté, "12" et "12,5" le sont.
+const NUMBER = /(?<![\p{L}\p{N}])\d+(?:[.,]\d+)?/gu;
+const PERCENT = /\d\s*(?:%|pour\s?cents?)/iu;
+
+// Termes de diagnostic ou de sanction, interdits dans les textes de l'IA.
+const FORBIDDEN_TERMS =
+  /(?<!\p{L})(?:d[ée]pressi\p{L}*|burn[\s-]?out|pathologi\p{L}*|diagnosti\p{L}*|troubles?\s+(?:anxieux|mentaux|mental|psychologiques?)|licenci\p{L}*|cong[ée]di\p{L}*|sanction\p{L}*|incomp[ée]ten\p{L}*)/iu;
+
+
 // ---------------------------------------------------------------
 // Fonction str()
 // Nettoie une valeur textuelle et limite sa longueur.
@@ -99,6 +113,15 @@ const normalize = (s) =>
 const mentionsPerson = (s) =>
   /\b(?:mr|mme|madame|monsieur|mademoiselle)\s+[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ'-]+/i.test(s);
 
+// Texte interdit : cible une personne, pose un diagnostic ou propose une sanction.
+const isUnsafe = (s) => mentionsPerson(s) || FORBIDDEN_TERMS.test(s);
+
+const numbersIn = (s) =>
+  (s.match(NUMBER) || []).map((n) => Number(n.replace(',', '.')));
+
+// Un pourcentage ou un nombre absent des données a été inventé par l'IA.
+const hasInventedNumber = (s, allowed) =>
+  PERCENT.test(s) || numbersIn(s).some((n) => !allowed.has(n));
 
 /**
  * Fonction principale : sanitizeAiOutput()
@@ -117,7 +140,11 @@ const mentionsPerson = (s) =>
  * @returns {object}
  * Résultat nettoyé et validé.
  */
-export const sanitizeAiOutput = (raw, comments) => {
+export const sanitizeAiOutput = (
+  raw,
+  comments,
+  { names = [], allowedNumbers = [], referenceTexts = [] } = {}
+) => {
 
   // 1. Vérifier que la réponse de l'IA est bien un objet.
   // On rejette null, les chaînes de caractères et les tableaux.
@@ -143,6 +170,31 @@ export const sanitizeAiOutput = (raw, comments) => {
   // avec les extraits proposés par l'IA.
   const normalizedTexts = comments.map((c) => normalize(c.text));
 
+  
+  // Nombre de commentaires valides cités par un thème.
+  // On ne fait pas confiance au nombre envoyé par l'IA.
+  const countMentions = (t) =>
+    new Set(
+      (Array.isArray(t?.commentIds) ? t.commentIds : []).filter((id) => validIds.has(id))
+    ).size;
+
+  const rawThemes = (raw.themes || []).filter((t) => t && typeof t === 'object');
+
+  // Si des thèmes sont proposés mais qu'aucun ne cite un vrai commentaire,
+  // la réponse de l'IA n'est pas exploitable.
+  if (rawThemes.length && rawThemes.every((t) => countMentions(t) === 0)) {
+    throw new AiServiceError('Réponse du service IA invalide : aucun thème ne cite un commentaire');
+  }
+
+  // Chiffres que l'IA a le droit de citer : ceux du backend et ceux des textes source.
+  const allowed = new Set([
+    ...allowedNumbers,
+    comments.length,
+    rawThemes.length,
+    ...rawThemes.map(countMentions),
+    ...referenceTexts.flatMap((t) => numbersIn(String(t))),
+    ...comments.flatMap((c) => numbersIn(c.text)),
+  ]);
 
   // 3. Vérifier qu'un extrait proposé par l'IA existe réellement
   // dans au moins un commentaire.
@@ -164,7 +216,7 @@ export const sanitizeAiOutput = (raw, comments) => {
 
 
   // 5. Nettoyer les thèmes proposés par l'IA.
-  const themes = (raw.themes || [])
+  const themes = rawThemes
 
     // Éliminer les éléments qui ne sont pas des objets valides.
     .filter((t) => t && typeof t === 'object')
@@ -203,6 +255,11 @@ export const sanitizeAiOutput = (raw, comments) => {
               // qui existent réellement dans les commentaires.
               .filter((e) => e && isRealExcerpt(e))
 
+              
+              // Les extraits repassent par le filtre d'identification.
+              .filter((e) => redact(e, names) === e && !mentionsPerson(e))
+
+
               // Garder maximum 3 extraits par thème.
               .slice(0, MAX_EXCERPTS)
           : [];
@@ -232,8 +289,10 @@ export const sanitizeAiOutput = (raw, comments) => {
             .filter(
               (r) =>
                 r.content &&
-                !mentionsPerson(r.content) &&
-                !mentionsPerson(r.rationale)
+                !isUnsafe(r.content) &&
+                !PERCENT.test(r.content) &&
+                !isUnsafe(r.rationale) &&
+                !hasInventedNumber(r.rationale, allowed)
             )
 
             // Garder maximum 3 recommandations par thème.
@@ -267,7 +326,14 @@ export const sanitizeAiOutput = (raw, comments) => {
     })
 
     // 6. Éliminer les thèmes sans nom ou sans mention valide.
-    .filter((t) => t.name && t.mentionCount > 0)
+      .filter(
+      (t) =>
+        t.name &&
+        t.mentionCount >= MIN_MENTIONS_FOR_THEME &&
+        !isUnsafe(t.name) &&
+        !isUnsafe(t.description) &&
+        !hasInventedNumber(t.description, allowed)
+    )
 
     // Trier les thèmes du plus mentionné au moins mentionné.
     .sort((a, b) => b.mentionCount - a.mentionCount)
@@ -275,12 +341,21 @@ export const sanitizeAiOutput = (raw, comments) => {
     // Garder les 8 thèmes les plus mentionnés.
     .slice(0, MAX_THEMES);
 
+  // Le résumé est affiché tel quel : s'il est absent ou non conforme,
+  // toute l'analyse est refusée (statut FAILED).
+  const summary = str(raw.summary, 5000);
+  if (!summary && !insufficientData) {
+    throw new AiServiceError('Réponse du service IA invalide : résumé absent');
+  }
+  if (isUnsafe(summary) || hasInventedNumber(summary, allowed)) {
+    throw new AiServiceError('Résumé du service IA refusé par les contrôles de confidentialité');
+  }
 
   // 7. Retourner le résultat final nettoyé.
   return {
 
     // Résumé généré par l'IA, limité à 5000 caractères.
-    summary: str(raw.summary, 5000),
+    summary,
 
     // Indique si les données sont insuffisantes.
     insufficientData,
@@ -291,7 +366,7 @@ export const sanitizeAiOutput = (raw, comments) => {
       : []
     )
       .map((l) => str(l, 300))
-      .filter(Boolean)
+      .filter((l) => l && !isUnsafe(l) && !hasInventedNumber(l, allowed))
       .slice(0, 10),
 
     // Nom du modèle IA utilisé, ou null s'il est absent.
