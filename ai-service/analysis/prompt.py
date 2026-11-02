@@ -30,6 +30,12 @@ Règles obligatoires :
 - N'écris ni chiffre, ni pourcentage, ni estimation de quantité : le backend calcule les chiffres.
 - commentIds contient uniquement les identifiants fournis qui parlent réellement du thème.
 - Un thème doit reposer sur au moins deux commentaires.
+
+- N'écris jamais les identifiants des commentaires dans les textes : ils servent uniquement dans commentIds.
+- N'ajoute aucune idée, cause ou émotion absente des commentaires.
+- La description d'un thème ne reprend que ce que disent les commentaires listés dans son commentIds.
+- Fais un thème POSITIVE distinct quand plusieurs commentaires citent un même point fort.
+
 - Copie les extraits sans les modifier et garde les marqueurs comme [nom] ou [e-mail].
 - Si les commentaires ne permettent pas de conclure, mets insufficientData à true,
   ne donne aucune recommandation et explique pourquoi dans limitations."""
