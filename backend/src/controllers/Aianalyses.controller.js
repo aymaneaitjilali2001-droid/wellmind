@@ -23,11 +23,13 @@ import crypto from 'node:crypto';
 import Survey from '../models/surveys.models.js';
 import Response from '../models/responses.models.js';
 import Organization from '../models/organizations.models.js';
+import User from '../models/User.models.js';
 import AiAnalysis, { RECOMMENDATION_STATUSES } from '../models/aiAnalyses.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { requireFields } from '../utils/validation.js';
 import { analyzeComments, AiServiceError } from '../utils/AIClient.js';
 import { sanitizeAiOutput } from '../utils/Aioutput.js';
+import { redact } from '../utils/Redact.js';
 
 // Une analyse PENDING plus vieille que ça est considérée comme bloquée
 const PENDING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -43,6 +45,12 @@ const findAnalysisInOrg = async (req) => {
 const getThreshold = async (organizationId) => {
   const org = await Organization.findById(organizationId).select('minResponseThreshold').lean();
   return org?.minResponseThreshold ?? 5;
+};
+
+// Prénoms et noms des membres actuels, pour remasquer les anciens commentaires
+const getOrgNames = async (organizationId) => {
+  const users = await User.find({ organizationId }).select('firstName lastName').lean();
+  return users.flatMap((u) => [u.firstName, u.lastName]);
 };
 
 // Mélange aléatoire : l'ordre envoyé à l'IA ne suit pas l'ordre des réponses
@@ -98,8 +106,9 @@ export const requestAnalysis = async (req, res) => {
   }
 
   // 2. Commentaires désidentifiés, numérotés 0, 1, 2… (aucun id réel)
+  const names = await getOrgNames(organizationId);
   const rows = shuffle(await Response.getRedactedComments(survey._id));
-  const comments = rows.map((r, i) => ({ id: i, text: r.text }));
+  const comments = rows.map((r, i) => ({ id: i, text: redact(r.text, names) }));
 
   const analysis = new AiAnalysis({
     organizationId,

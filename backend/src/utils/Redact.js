@@ -1,8 +1,11 @@
 // Désidentifie un commentaire avant de l'envoyer à l'IA ou de l'afficher
-// en extrait : e-mails, numéros de téléphone et noms des membres de
-// l'organisation sont remplacés par des marqueurs neutres.
+// en extrait : e-mails, liens, mentions, numéros de téléphone et noms des
+// membres de l'organisation sont remplacés par des marqueurs neutres.
 
 const EMAIL = /[\p{L}0-9._%+-]+@[\p{L}0-9.-]+\.[\p{L}]{2,}/giu;
+// La ponctuation finale reste dans le texte : "voir https://a.fr, puis" garde sa virgule
+const URL_LINK = /\b(?:https?:\/\/|www\.)[^\s<>"']*[^\s<>"'.,;:!?)]/giu;
+const MENTION = /(?<![\p{L}\p{N}.])@[\p{L}\p{N}._-]+/gu;
 const PHONE = /(?:\+?\d[\s.-]?){8,}\d/g;
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -11,7 +14,11 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export const redact = (text, names = []) => {
   if (typeof text !== 'string') return text;
 
-  let out = text.replace(EMAIL, '[e-mail]').replace(PHONE, '[téléphone]');
+  let out = text
+    .replace(EMAIL, '[e-mail]')
+    .replace(URL_LINK, '[lien]')
+    .replace(MENTION, '[mention]')
+    .replace(PHONE, '[téléphone]');
 
   const unique = [...new Set(names.filter((n) => typeof n === 'string' && n.trim().length >= 2))]
     .map((n) => n.trim())
