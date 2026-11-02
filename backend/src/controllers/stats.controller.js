@@ -23,6 +23,9 @@
 import Survey from '../models/surveys.models.js';
 import Response from '../models/responses.models.js';
 import Organization from '../models/organizations.models.js';
+import Participation from '../models/participations.models.js';
+import { countEligible, toRate } from './participation.controller.js';
+import { withBreakdown } from '../utils/Statistics.js';
 import { HttpError } from '../utils/Httperror.js';
 
 // GET /api/stats/surveys/:id
@@ -74,11 +77,24 @@ export const getSurveyStats = async (req, res) => {
     questions
   );
 
-  // 7. Retourner les résultats chiffrés.
+    // 7. Calculer la participation.
+  const [participants, eligible] = await Promise.all([
+    Participation.countForSurvey(survey._id),
+    countEligible(organizationId),
+  ]);
+
+  // 8. Retourner les résultats chiffrés.
   res.json({
     surveyId: survey._id,
     title: survey.title,
     responseCount,
-    statistics,
+    participation: {
+      participants,
+      eligible,
+      rate: toRate(participants, eligible),
+    },
+    statistics: statistics.map((stat) =>
+      withBreakdown(stat, questions.find((q) => q._id.toString() === stat.questionId))
+    ),
   });
 };

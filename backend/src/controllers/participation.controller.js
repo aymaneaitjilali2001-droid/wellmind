@@ -26,11 +26,11 @@ import { HttpError } from '../utils/Httperror.js';
 // ---------- Helpers ----------
 
 // Employés actifs pouvant répondre
-const countEligible = (organizationId) =>
+export const countEligible = (organizationId) =>
   User.countDocuments({ organizationId, role: 'EMPLOYEE', isActive: true });
 
 // Taux en %, arrondi à 1 décimale (ex : 72.5)
-const toRate = (participants, eligible) =>
+export const toRate = (participants, eligible) =>
   eligible ? Math.round((participants / eligible) * 1000) / 10 : 0;
 
 // Nombre de participants pour une liste de sondages, en une requête
