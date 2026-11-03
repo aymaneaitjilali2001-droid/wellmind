@@ -26,8 +26,8 @@ import Organization from '../models/organizations.models.js';
 import AiAnalysis, { RECOMMENDATION_STATUSES } from '../models/aiAnalyses.models.js';
 import { HttpError } from '../utils/Httperror.js';
 import { requireFields } from '../utils/validation.js';
-import { analyzeComments, AiServiceError } from '../utils/aiClient.js';
-import { sanitizeAiOutput } from '../utils/aiOutput.js';
+import { analyzeComments, AiServiceError } from '../utils/AIClient.js';
+import { sanitizeAiOutput } from '../utils/Aioutput.js';
 
 // Une analyse PENDING plus vieille que ça est considérée comme bloquée
 const PENDING_TIMEOUT_MS = 5 * 60 * 1000;

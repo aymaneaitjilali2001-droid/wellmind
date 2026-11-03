@@ -47,6 +47,9 @@ export function ActionStatusCard({
   };
 
   const transitions = ALLOWED_TRANSITIONS[action.status];
+  // undefined dès que le statut a changé : le parent met l'action à jour avant la fin de run(),
+  // alors que target désigne encore le statut qui vient d'être appliqué
+  const pending = target ? getTransition(action.status, target) : undefined;
 
   return (
     <Card>
@@ -62,9 +65,9 @@ export function ActionStatusCard({
           </Alert>
         )}
 
-        {target ? (
+        {target && pending ? (
           <ConfirmPanel
-            tone={getTransition(action.status, target).tone === 'danger' ? 'danger' : 'default'}
+            tone={pending.tone === 'danger' ? 'danger' : 'default'}
             confirmLabel="Confirmer"
             busy={busy === 'status'}
             onConfirm={() => run('status', () => onChangeStatus(target, note.trim()))}
@@ -73,7 +76,7 @@ export function ActionStatusCard({
               setNote('');
             }}
           >
-            <p className="font-medium">{getTransition(action.status, target).confirm}</p>
+            <p className="font-medium">{pending.confirm}</p>
             <label className="mt-3 block">
               <span className="text-muted-foreground">Note de suivi (facultative)</span>
               <textarea
