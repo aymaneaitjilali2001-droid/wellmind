@@ -5,7 +5,7 @@ import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSaveAction } from '@/hooks/useSaveAction';
 import type { UpdateOrganizationInput } from '@/services/organization';
-import type { Organization } from '@/types/auth';
+import type { Organization } from '@/types/Auth';
 import { SaveFooter } from './SaveFooter';
 
 // Limites du modèle Organization (minResponseThreshold : min 3, max 50, défaut 5)

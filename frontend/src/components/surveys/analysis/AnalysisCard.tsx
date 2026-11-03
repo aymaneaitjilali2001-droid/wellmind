@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { isActionsKey } from '@/hooks/useActions';
 import { useLatestAnalysis } from '@/hooks/useAnalyses';
-import { getErrorMessage } from '@/lib/api';
+import { getErrorMessage } from '@/lib/Api';
 import { requestAnalysis } from '@/services/analyses';
 import type { AnalysisTheme, ThemeSentiment } from '@/types/analysis';
 import type { Survey } from '@/types/survey';

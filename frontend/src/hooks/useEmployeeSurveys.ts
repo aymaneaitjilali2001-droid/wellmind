@@ -1,4 +1,4 @@
-import { useApi } from '@/lib/swr';
+import { useApi } from '@/lib/Swr';
 import type {
   EmployeeAction,
   EmployeeSurvey,

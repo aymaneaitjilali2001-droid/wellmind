@@ -1,4 +1,4 @@
-import { useApi } from '@/lib/swr';
+import { useApi } from '@/lib/Swr';
 import type { StatsOverview, SurveyStats } from '@/types/stats';
 
 // Résultats d'un sondage. Le backend répond 409 s'il n'est pas clôturé

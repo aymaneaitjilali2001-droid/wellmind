@@ -1,5 +1,5 @@
 import { TriangleAlert } from 'lucide-react';
-import { ButtonLink } from '@/components/ButtonLink';
+import { ButtonLink } from '@/components/Buttonlink';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ACTION_STATUSES, STATUS_LABELS } from '@/lib/action-status';
 import { cn } from '@/lib/utils';

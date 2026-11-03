@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ChartColumn } from 'lucide-react';
 import { SurveyStatusBadge } from '@/components/surveys/SurveyStatusBadge';
-import { ButtonLink } from '@/components/ButtonLink';
+import { ButtonLink } from '@/components/Buttonlink';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ParticipationOverview } from '@/hooks/useDashboard';
 import { getSurveyTiming } from '@/lib/survey-dates';

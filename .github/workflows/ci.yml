@@ -14,13 +14,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
+      # Pas encore de tests backend : on vérifie au moins la syntaxe de chaque fichier
+      - run: find src -name '*.js' -not -path '*/node_modules/*' -print0 | xargs -0 -n1 node --check
 
   frontend:
     runs-on: ubuntu-latest

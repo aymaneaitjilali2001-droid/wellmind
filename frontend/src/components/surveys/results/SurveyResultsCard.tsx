@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSurveyStats } from '@/hooks/useStats';
-import { getErrorMessage, type ApiErrorBody } from '@/lib/api';
+import { getErrorMessage, type ApiErrorBody } from '@/lib/Api';
 import { getScoreLevel } from '@/lib/score';
 import { cn } from '@/lib/utils';
 import type { ChoiceStat, QuestionStat, RatingStat } from '@/types/stats';

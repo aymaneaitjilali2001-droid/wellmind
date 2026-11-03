@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import { AlertCircle, Eye, Loader2 } from 'lucide-react';
-import { ButtonLink } from '@/components/ButtonLink';
+import { ButtonLink } from '@/components/Buttonlink';
 import { FormField } from '@/components/FormField';
-import { SelectField } from '@/components/SelectField';
+import { SelectField } from '@/components/Selectfield';
 import { TextareaField } from '@/components/TextareaField';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import {
   type ActionFormErrors,
   type ActionFormValues,
 } from '@/lib/action-form';
-import { getErrorDetails, getErrorMessage } from '@/lib/api';
+import { getErrorDetails, getErrorMessage } from '@/lib/Api';
 
 // Thèmes proposés (le RH peut aussi en écrire un autre)
 const TOPIC_SUGGESTIONS = [

@@ -1,4 +1,4 @@
-import { useApi } from '@/lib/swr';
+import { useApi } from '@/lib/Swr';
 import type { Analysis, AnalysisListItem } from '@/types/analysis';
 
 export const latestAnalysisKey = (surveyId: string) => `/analyses/latest?surveyId=${surveyId}`;

@@ -5,7 +5,7 @@ import { FormField } from '@/components/FormField';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSaveAction } from '@/hooks/useSaveAction';
 import type { UpdateOrganizationInput } from '@/services/organization';
-import type { Organization } from '@/types/auth';
+import type { Organization } from '@/types/Auth';
 import { SaveFooter } from './SaveFooter';
 
 interface Values {
