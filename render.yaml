@@ -1,0 +1,53 @@
+# Blueprint Render : backend Express et service IA Flask.
+# Le frontend est déployé sur Vercel, et la base sur MongoDB Atlas.
+# Les variables en sync: false sont demandées par Render à la création : aucun secret ici.
+services:
+  - type: web
+    name: wellmind-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # Obligatoires
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN # URL du frontend Vercel, sans / final
+        sync: false
+      - key: AI_SERVICE_URL # URL du service wellmind-ai, sans / final
+        sync: false
+      - key: AI_SERVICE_TOKEN # même valeur que AI_INTERNAL_KEY de wellmind-ai
+        sync: false
+      # Facultative
+      - key: AI_SERVICE_TIMEOUT_MS
+        value: "60000"
+
+  - type: web
+    name: wellmind-ai
+    runtime: python
+    plan: free
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90
+    healthCheckPath: /health
+    envVars:
+      # Obligatoires
+      - key: AI_INTERNAL_KEY # même valeur que AI_SERVICE_TOKEN de wellmind-backend
+        sync: false
+      - key: AI_API_KEY # clé Groq
+        sync: false
+      # Facultatives
+      - key: AI_MODEL
+        value: openai/gpt-oss-20b
+      - key: AI_TIMEOUT_SECONDS
+        value: "45"
+      - key: PYTHON_VERSION # version utilisée pour les tests en local
+        value: 3.12.10

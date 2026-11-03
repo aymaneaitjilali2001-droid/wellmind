@@ -3,6 +3,7 @@
 // Analyse IA des commentaires d'un sondage (RH seulement).
 //
 // Règles du cahier des charges appliquées ici :
+//  - analyse seulement pour un sondage clôturé
 //  - pas d'analyse sous le seuil de réponses de l'organisation (5 par défaut)
 //  - seuls les commentaires DÉSIDENTIFIÉS sont envoyés à l'IA,
 //    sans aucun identifiant d'employé ni de réponse
@@ -60,12 +61,12 @@ export const requestAnalysis = async (req, res) => {
 
   const survey = await Survey.findOne({ _id: req.body.surveyId, organizationId });
   if (!survey) throw new HttpError(404, 'Sondage introuvable');
-   if (survey.status !== 'CLOSED') {
-    throw new HttpError(
-      409,
-      'Seuls les sondages clôturés peuvent être analysés'
-    );
+  // Analyse seulement après clôture : sinon, en comparant deux analyses faites avant et après
+  // une nouvelle réponse, on pourrait retrouver ce qu'une personne a écrit.
+  if (survey.status !== 'CLOSED') {
+    throw new HttpError(409, "L'analyse IA est disponible uniquement pour les sondages clôturés");
   }
+
   // Évite deux analyses en même temps sur le même sondage
   const running = await AiAnalysis.exists({
     surveyId: survey._id,
@@ -115,32 +116,23 @@ export const requestAnalysis = async (req, res) => {
 
   // 4. Appel au service IA, puis validation de sa réponse
   try {
-    const allQuestions = survey.getSortedQuestions();
-
     const textQuestions = survey
       .getSortedQuestions()
       .filter((q) => q.type === 'TEXT')
       .map((q) => q.label);
 
-      const statistics = await Response.getAggregatedStats(
-     survey._id,
-     allQuestions
-    );
     const raw = await analyzeComments({
       survey: { title: survey.title, topic: survey.topic || null, questions: textQuestions },
       comments,
-      statistics,
     });
 
     const clean = sanitizeAiOutput(raw, comments);
 
     analysis.set({
       status: 'DONE',
-      statistics,
       summary: clean.summary,
       insufficientData: clean.insufficientData,
       limitations: clean.limitations,
-      aiGenerated: true,
       aiModel: clean.model,
       themes: clean.themes,
     });
@@ -180,7 +172,6 @@ export const listAnalyses = async (req, res) => {
       surveyId: a.surveyId?._id || a.surveyId,
       surveyTitle: a.surveyId?.title || null,
       status: a.status,
-      aiGenerated: a.aiGenerated,
       insufficientData: a.insufficientData,
       responseCount: a.responseCount,
       commentCount: a.commentCount,

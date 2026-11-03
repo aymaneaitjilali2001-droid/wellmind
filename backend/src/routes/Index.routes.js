@@ -4,7 +4,7 @@ import organizationRoutes from './Organization.routes.js';
 import usersRoutes from './Users.routes.js';
 import profileRoutes from './profile.routes.js';
 import surveysRoutes from './surveys.routes.js';
-import employeeRoutes from './employee.routes.js';
+import employeeRoutes from './Employee.routes.js';
 import statsRoutes from './Stats.routes.js';
 import participationRoutes from './participation.routes.js';
 import analysesRoutes from './Analyses.routes.js';
