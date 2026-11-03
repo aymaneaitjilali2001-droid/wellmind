@@ -1,107 +1,41 @@
 'use client';
 
-import { AlertCircle, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Eye, EyeOff, Loader2 } from 'lucide-react';
-import { ButtonLink } from '@/components/Buttonlink';
+import { AlertCircle, Inbox, Loader2, ShieldCheck } from 'lucide-react';
+import { OpenSurveyCard } from '@/components/employee-space/OpenSurveyCard';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/Authcontext';
+import { useMySurveys } from '@/hooks/useEmployeeSurveys';
 import { getErrorMessage } from '@/lib/Api';
-import { useApi } from '@/lib/Swr';
 
-// Un sondage tel que renvoyé par GET /api/employee/surveys
-interface EmployeeSurvey {
-  _id: string;
-  title: string;
-  description?: string;
-  topic?: string;
-  isAnonymous: boolean;
-  startDate: string;
-  endDate: string;
-  questionCount: number;
-  alreadySubmitted: boolean;
-}
-
-const formatDate = (date: string) =>
-  new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-
-function SurveyCard({ survey }: { survey: EmployeeSurvey }) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="mb-1 flex flex-wrap items-center gap-2 text-xs font-medium">
-          {survey.isAnonymous ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-brand-700">
-              <EyeOff aria-hidden="true" className="size-3" /> Anonyme
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
-              <Eye aria-hidden="true" className="size-3" /> Identifié
-            </span>
-          )}
-          {survey.topic && <span className="text-muted-foreground">{survey.topic}</span>}
-        </div>
-        <CardTitle className="text-lg font-semibold">{survey.title}</CardTitle>
-        {survey.description && <CardDescription>{survey.description}</CardDescription>}
-      </CardHeader>
-
-      <CardContent className="mt-auto text-muted-foreground">
-        <p className="flex items-center gap-2">
-          <CalendarClock aria-hidden="true" className="size-4 shrink-0" />
-          Jusqu’au {formatDate(survey.endDate)}
-        </p>
-        <p className="flex items-center gap-2">
-          <ClipboardList aria-hidden="true" className="size-4 shrink-0" />
-          {survey.questionCount} {survey.questionCount > 1 ? 'questions' : 'question'}
-        </p>
-      </CardContent>
-
-      <CardFooter>
-        {survey.alreadySubmitted ? (
-          <p className="flex items-center gap-2 font-medium text-brand-700">
-            <CheckCircle2 aria-hidden="true" className="size-4" /> Vous avez déjà répondu
-          </p>
-        ) : (
-          <ButtonLink href={`/employee/surveys/${survey._id}`}>
-            Répondre <ArrowRight aria-hidden="true" />
-          </ButtonLink>
-        )}
-      </CardFooter>
-    </Card>
-  );
-}
-
-// Accueil employé : les sondages ouverts de son organisation
+// Accueil employé : les sondages ouverts, ceux à faire en premier
 export default function EmployeeHomePage() {
   const { user, organization } = useAuth();
-  const { data: surveys, error, isLoading, mutate } = useApi<EmployeeSurvey[]>('/employee/surveys');
+  const { data: surveys, error, isLoading, mutate } = useMySurveys();
 
-  const toAnswer = surveys?.filter((s) => !s.alreadySubmitted) ?? [];
+  const pending = surveys?.filter((s) => !s.alreadySubmitted) ?? [];
   const answered = surveys?.filter((s) => s.alreadySubmitted) ?? [];
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* En-tête de la page */}
-      <div>
+    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+      <header>
         <h1 className="text-2xl font-semibold">Bonjour {user?.firstName}</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground">
-          Retrouvez ici les sondages ouverts de {organization?.name}. Vos réponses aux sondages anonymes ne sont
-          jamais reliées à votre compte.
+          Voici les sondages ouverts{organization ? ` chez ${organization.name}` : ''}. Vos réponses aident à
+          améliorer le bien-être de chacun.
         </p>
-      </div>
+      </header>
 
-      {/* Premier chargement */}
       {isLoading && (
-        <div className="flex justify-center py-16">
+        <div className="flex justify-center py-12">
           <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Chargement des sondages" />
         </div>
       )}
 
-      {/* Erreur */}
-      {error && !isLoading && (
+      {error && (
         <Alert variant="destructive">
           <AlertCircle />
-          <AlertTitle>Impossible de charger les sondages</AlertTitle>
+          <AlertTitle>Impossible de charger vos sondages</AlertTitle>
           <AlertDescription>
             <p>{getErrorMessage(error)}</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => mutate()}>
@@ -111,42 +45,57 @@ export default function EmployeeHomePage() {
         </Alert>
       )}
 
-      {/* Données */}
-      {surveys && !error && (
+      {surveys && (
         <>
-          {surveys.length === 0 && (
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
-              <ClipboardList aria-hidden="true" className="size-8 text-muted-foreground" />
-              <p className="font-medium">Aucun sondage ouvert pour l’instant</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Les nouveaux sondages de votre organisation apparaîtront ici.
-              </p>
-            </div>
-          )}
-
-          {toAnswer.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">À remplir ({toAnswer.length})</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {toAnswer.map((survey) => (
-                  <SurveyCard key={survey._id} survey={survey} />
+          <section aria-labelledby="pending-title" className="flex flex-col gap-4">
+            <h2 id="pending-title" className="text-lg font-semibold">
+              À répondre <span className="text-muted-foreground">({pending.length})</span>
+            </h2>
+            {pending.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
+                <Inbox aria-hidden="true" className="size-8 text-muted-foreground" />
+                <p className="font-medium">Aucun sondage en attente</p>
+                <p className="text-sm text-muted-foreground">
+                  {answered.length > 0
+                    ? 'Vous avez répondu à tous les sondages ouverts. Merci !'
+                    : 'Les RH n’ont pas de sondage ouvert pour le moment.'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {pending.map((s) => (
+                  <OpenSurveyCard key={s._id} survey={s} />
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {answered.length > 0 && (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold">Déjà répondu ({answered.length})</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {answered.map((survey) => (
-                  <SurveyCard key={survey._id} survey={survey} />
+            <section aria-labelledby="answered-title" className="flex flex-col gap-4">
+              <h2 id="answered-title" className="text-lg font-semibold">
+                Déjà répondu <span className="text-muted-foreground">({answered.length})</span>
+              </h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {answered.map((s) => (
+                  <OpenSurveyCard key={s._id} survey={s} />
                 ))}
               </div>
             </section>
           )}
         </>
       )}
+
+      <aside className="flex items-start gap-3 rounded-xl border bg-card p-4 text-sm">
+        <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-brand-600" />
+        <div>
+          <p className="font-medium">Votre confidentialité</p>
+          <p className="mt-1 text-muted-foreground">
+            Chaque sondage indique s’il est <strong>anonyme</strong> ou <strong>identifié</strong> avant que vous
+            répondiez. Pour un sondage anonyme, vos réponses ne sont jamais reliées à votre compte, et les RH ne voient
+            les résultats qu’à partir d’un nombre minimum de réponses.
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }
