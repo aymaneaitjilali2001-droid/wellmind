@@ -33,15 +33,19 @@ Imports corrigés :
 
 Aucun fichier n'a été renommé et aucune variable d'environnement n'a changé de nom. Aucun fichier n'a été modifié dans `ai-service/`.
 
-**À faire avant le commit**, pour que Git cesse de suivre le fichier de cache :
+### Corrections avant le premier déploiement
 
-```bash
-git rm --cached frontend/tsconfig.tsbuildinfo
-```
+| Correction | Fichier ou réglage | Raison |
+|---|---|---|
+| Base dédiée à la production | Variable Render `MONGO_DB_NAME=wellmind_prod` | Le dépôt public contient le mot de passe de démo : la production ne doit jamais utiliser une base où le seed a tourné |
+| Faille `body-parser` corrigée (2.3.0 → 2.4.0, avec `qs` et `follow-redirects`) | `backend/package-lock.json` | Une requête piégée pouvait ralentir le serveur, sans connexion |
+| 4 threads pour gunicorn | `render.yaml` | `/health` répond pendant une analyse, et une analyse n'en bloque pas une autre |
+| Délai du frontend de 30 s à 90 s | `frontend/src/lib/Api.ts` | Le backend gratuit met environ 1 min à se réveiller |
+| Délai du backend vers l'IA de 60 s à 85 s | `render.yaml` | Le service IA gratuit met aussi environ 1 min à se réveiller |
 
 ## 2. Résultat de `npm run build`
 
-Lancé dans le vrai dossier `frontend/` après les corrections, sous Windows : **réussi (code de sortie 0)**, 17 pages générées.
+Lancé dans le vrai dossier `frontend/` après toutes les corrections, sous Windows : **réussi (code de sortie 0)**, 17 pages générées. Le détail ci-dessous vient du build précédent ; le dernier build affiche les mêmes pages. La CI a aussi réussi ce build sous Linux, sur le commit précédant ces dernières corrections.
 
 ```
  ✓ Compiled successfully in 5.4s
@@ -86,7 +90,9 @@ Autres vérifications :
 | Dépendances importées mais non déclarées | aucune |
 | `npm ci --dry-run` (frontend et backend) | réussi |
 | `node --check` sur les 44 fichiers du backend | aucune erreur |
-| `pytest` (`ai-service`, sans `.env`) | 32 tests réussis |
+| `pytest` (`ai-service`) | 32 tests réussis |
+| Installation neuve du backend (`npm ci`, `NODE_ENV=production`) | réussie, `bcrypt` opérationnel |
+| Parcours complet en local, modèle d'IA simulé, base temporaire (rewrite Next.js, Express en production, Flask) | 30 vérifications sur 30 |
 | Fichier `.env` suivi par Git | aucun, seulement les `.env.example` |
 
 ## 3. Réglages de chaque service
@@ -100,12 +106,12 @@ Le plus simple : **New > Blueprint**, en choisissant ce dépôt. Render lit `ren
 | Runtime | Python | Node |
 | Root Directory | `ai-service` | `backend` |
 | Build Command | `pip install -r requirements.txt` | `npm ci` |
-| Start Command | `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90` | `npm start` |
+| Start Command | `gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90 --worker-class gthread --threads 4` | `npm start` |
 | Health Check Path | `/health` | `/api/health` |
 
-`render.yaml` choisit l'offre gratuite (`plan: free`). Le `--timeout 90` est nécessaire : gunicorn coupe par défaut une requête après 30 s, alors que l'appel à Groq peut durer jusqu'à 45 s.
+`render.yaml` choisit l'offre gratuite (`plan: free`). Le `--timeout 90` est nécessaire : gunicorn coupe par défaut une requête après 30 s, alors que l'appel à Groq peut durer jusqu'à 45 s. Les 4 threads permettent à `/health` de répondre pendant une analyse : Render arrête d'envoyer du trafic après 15 s d'échecs et redémarre le service après 60 s.
 
-Vérifiez la branche déployée : celle du dépôt par défaut est `main`, et ces corrections sont pour l'instant sur `feature/frontend`.
+Déployez la branche `main`, après y avoir poussé ces corrections.
 
 ### Frontend sur Vercel
 
@@ -137,12 +143,12 @@ Cette valeur est **figée au moment du build**. Après l'avoir modifiée, il fau
 |---|---|---|
 | `NODE_ENV` | `production` | Oui : active l'option `secure` du cookie |
 | `MONGO_URI` | `mongodb+srv://<utilisateur>:<mot_de_passe>@<cluster>.mongodb.net/` | Oui |
-| `MONGO_DB_NAME` | `wellmind` | Oui : sinon la base utilisée s'appelle `chapitre` |
+| `MONGO_DB_NAME` | `wellmind_prod` | Oui : sinon la base utilisée s'appelle `chapitre`. Ne lancez jamais `npm run seed` sur cette base |
 | `JWT_SECRET` | chaîne aléatoire d'au moins 32 caractères | Oui |
 | `CORS_ORIGIN` | `https://wellmind.vercel.app` | Oui |
 | `AI_SERVICE_URL` | `https://wellmind-ai.onrender.com` | Oui |
 | `AI_SERVICE_TOKEN` | même valeur que `AI_INTERNAL_KEY` | Oui |
-| `AI_SERVICE_TIMEOUT_MS` | `60000` | Non (60000 par défaut) |
+| `AI_SERVICE_TIMEOUT_MS` | `85000` | Recommandée sur l'offre gratuite (60000 si absente) |
 | `PORT` | fourni par Render | Ne pas définir |
 | `AI_SERVICE_MOCK` | — | Ne pas définir en production |
 | `SEED_PASSWORD` | — | Ne pas définir : le seed est refusé en production |
@@ -155,7 +161,7 @@ Cette valeur est **figée au moment du build**. Après l'avoir modifiée, il fau
 | `AI_API_KEY` | clé Groq | Oui |
 | `AI_MODEL` | `openai/gpt-oss-20b` | Non (même valeur par défaut) |
 | `AI_TIMEOUT_SECONDS` | `45` | Non (45 par défaut) |
-| `PYTHON_VERSION` | `3.12.10` | Non, mais recommandée : version testée |
+| `PYTHON_VERSION` | `3.12.10` | Non, mais recommandée : version testée (Render utilise sinon une version plus récente) |
 | `PORT` | fourni par Render | Ne pas définir |
 
 Pour générer `JWT_SECRET` et la clé interne (une valeur différente pour chacun) :
@@ -166,7 +172,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 ## 5. Ordre de déploiement
 
-1. **MongoDB Atlas** : dans Network Access, autorisez `0.0.0.0/0`, puis récupérez l'URI de connexion.
+1. **MongoDB Atlas** : dans Network Access, autorisez `0.0.0.0/0`, puis récupérez l'URI de connexion. La base `wellmind_prod` se crée seule au premier démarrage du backend, sans seed.
 2. **`ai-service`** : déployez-le, puis vérifiez que `https://<wellmind-ai>/health` répond `{"service":"wellmind-ai","status":"ok"}`.
 3. **`backend`** : renseignez `AI_SERVICE_URL` avec l'adresse de l'étape 2. Comme l'URL Vercel n'existe pas encore, mettez une valeur provisoire dans `CORS_ORIGIN`.
 4. **`frontend`** : déployez-le sur Vercel avec `API_URL` égale à l'adresse du backend.
@@ -185,6 +191,7 @@ Faites ces tests depuis l'URL Vercel. `npm run seed` étant refusé en productio
 - [ ] Dans les outils du navigateur, vérifier que le cookie `wellmind_token` est sur le domaine Vercel, avec `HttpOnly` et `Secure`.
 - [ ] Recharger la page : la session reste ouverte.
 - [ ] Se déconnecter puis se reconnecter.
+- [ ] Se connecter avec deux comptes différents, et vérifier que `/api/auth/me` renvoie le bon utilisateur : aucune réponse ne doit venir du cache de Vercel (en-tête `x-vercel-cache`).
 
 **Parcours complet**
 
@@ -203,12 +210,18 @@ Si l'analyse échoue, vérifiez dans cet ordre : `AI_SERVICE_URL`, l'égalité e
 ## 7. Limites connues et nettoyage facultatif
 
 **Non vérifié avant le déploiement réel :**
-- le build sur Linux : la casse des imports a été contrôlée par un script, mais le build n'a tourné que sous Windows ;
-- le démarrage par gunicorn, qui ne fonctionne pas sous Windows : seul le chargement de `app:app` et de ses routes a été testé ;
-- les déploiements sur Render et Vercel, et la syntaxe de `render.yaml` selon Render (le YAML lui-même est valide) ;
-- le délai maximal de Vercel pour une requête transmise par rewrite, à surveiller pour l'analyse IA.
+- le démarrage réel par gunicorn, qui ne fonctionne pas sous Windows : l'application et les options de la commande ont été vérifiées séparément ;
+- les transactions sur le cluster gratuit d'Atlas, testées seulement sur une base locale : l'inscription par `/register` le confirmera ;
+- le passage du cookie à travers Vercel, testé seulement avec `next start` ;
+- l'appel réel à Groq depuis Render, et l'acceptation de `render.yaml` par Render (le YAML lui-même est valide).
 
-**Offre gratuite de Render :** un service inactif peut se mettre en veille. Le premier appel sera alors lent, et la première analyse IA peut dépasser les 60 s du backend. Il suffit de la relancer ; les statistiques restent disponibles.
+**Limites de délai sur l'offre gratuite :** réveil Render environ 60 s < backend vers IA 85 s < frontend 90 s < limite Vercel 120 s. Si le backend et le service IA dorment tous les deux quand une analyse est lancée, le total peut dépasser ces délais : il suffit de la relancer. Si le message indique qu'une analyse est déjà en cours, attendez une à deux minutes puis rechargez la page.
+
+**Offre gratuite de Render :** un service s'endort après 15 minutes sans trafic et met environ 1 minute à se réveiller. Le premier chargement après une pause sera donc lent.
+
+**Failles restantes signalées par `npm audit` :** `tar` et ses dépendances viennent de l'installation de `bcrypt` 5. Le test en fonctionnement montre que `tar` n'est pas chargé. Les retirer demanderait `bcrypt` 6, une version majeure.
+
+**À faire avant d'inviter de vrais employés :** limite de tentatives de connexion, changement de mot de passe à la première connexion, récupération d'un compte RH, en-têtes de sécurité, et information des employés sur l'envoi des commentaires à Groq.
 
 **Nettoyage facultatif (rien n'a été changé) :**
 - `axios`, `crypto` et `node-cron` sont déclarés dans `backend/package.json`, mais jamais importés dans `backend/src/` ;

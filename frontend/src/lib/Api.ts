@@ -11,7 +11,8 @@ export const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 30000,
+  // 90 s : sur l'offre gratuite de Render, le backend met environ 1 min à se réveiller
+  timeout: 90000,
 });
 
 // Format des erreurs renvoyées par errorHandler côté backend

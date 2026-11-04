@@ -26,9 +26,9 @@ services:
         sync: false
       - key: AI_SERVICE_TOKEN # même valeur que AI_INTERNAL_KEY de wellmind-ai
         sync: false
-      # Facultative
+      # Facultative : laisse au service IA le temps de se réveiller sur l'offre gratuite (environ 1 min)
       - key: AI_SERVICE_TIMEOUT_MS
-        value: "60000"
+        value: "85000"
 
   - type: web
     name: wellmind-ai
@@ -36,7 +36,8 @@ services:
     plan: free
     rootDir: ai-service
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90
+    # 4 threads : /health répond pendant une analyse, et une analyse n'en bloque pas une autre
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 90 --worker-class gthread --threads 4
     healthCheckPath: /health
     envVars:
       # Obligatoires

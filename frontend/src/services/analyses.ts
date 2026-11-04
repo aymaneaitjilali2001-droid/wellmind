@@ -2,8 +2,8 @@ import { api } from '@/lib/Api';
 import type { Action } from '@/types/action';
 import type { ActionFromRecommendationInput, Analysis, Recommendation, RecommendationStatus } from '@/types/analysis';
 
-// L'appel attend la réponse du service IA (jusqu'à 60 s côté backend) :
-// on laisse donc plus que les 30 s par défaut d'axios.
+// L'appel attend la réponse du service IA (jusqu'à 85 s côté backend) :
+// le délai reste donc un peu plus long que celui du backend.
 export const requestAnalysis = (surveyId: string) =>
   api.post<Analysis>('/analyses', { surveyId }, { timeout: 90_000 }).then((res) => res.data);
 
